@@ -17,13 +17,13 @@ class SchemaData:
         path: URL path of the request.
         converted_path: URL path converted to the camel-case for usage in schemax generation.
         args: Arguments of the request.
-        queries: Query parameters of the request. Currently unsupported.
+        queries: Query parameters of the request. Currently unsupported and always '[]'.
         interface_method: Interface name for usage in schemax generation.
         schema_prefix: Schema prefix name for usage in schemax generation.
         response_schema: Normalized response schema (without $ref).
-        response_schema_d42: Converted to d42 response schema.
+        response_schema_d42: Converted to d42 response_schema.
         request_schema: Normalized request schema (without $ref).
-        request_schema_d42: Converted to d42 request schema.
+        request_schema_d42: Converted to d42 request_schema.
         tags: Tags of the request from OpenAPI schema.
     """
     http_method: str
@@ -48,6 +48,9 @@ def collect_schema_data(value: Dict[str, Any]) -> List[SchemaData]:
     if "paths" in normalized_schema:
         for path, path_data in normalized_schema["paths"].items():
             for http_method, method_data in path_data.items():
+                if http_method.lower() not in ["get", "post", "put", "patch", "delete"]:
+                    continue
+
                 request_schema, response_schema = get_request_response_schemas(method_data)
 
                 args = get_path_arguments(path)
@@ -60,7 +63,7 @@ def collect_schema_data(value: Dict[str, Any]) -> List[SchemaData]:
                     path=path,
                     converted_path=convert_to_snake_case(path),
                     args=args,
-                    queries=[],
+                    queries=[],  # TODO: need to collect all query params
                     interface_method=get_interface_method_name(http_method, path),
                     status=get_success_status(method_data),
                     schema_prefix=get_schema_prefix(http_method, path),
