@@ -1,4 +1,4 @@
-PROJECT_NAME=schemax-openapi
+PROJECT_NAME=schemax_openapi
 
 .PHONY: install
 install:

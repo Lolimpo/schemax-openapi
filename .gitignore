@@ -283,5 +283,7 @@ pip-selfcheck.json
 
 # End of https://www.toptal.com/developers/gitignore/api/python,pycharm,virtualenv,visualstudiocode
 
-schema*
+schema-*.json
+schema-*.yaml
+schema-*.yml
 sandbox.py
