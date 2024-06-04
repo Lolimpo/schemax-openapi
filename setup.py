@@ -20,7 +20,7 @@ setup(
     author="Nikita Mikheev",
     author_email="thelol1mpo@gmail.com",
     python_requires=">=3.10",
-    url="https://github.com/Lolimpo/openapi-parserr",
+    url="https://github.com/Lolimpo/schemax-openapi",
     packages=find_packages(),
     package_data={"schemax-openapi": ["py.typed"]},
     install_requires=find_required(),
