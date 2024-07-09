@@ -32,7 +32,7 @@ class SchemaData:
     args: List[str]
     queries: List[str]
     interface_method: str
-    status: str | int
+    status: Union[str, int]
     schema_prefix: str
     response_schema: Dict[str, Any]
     response_schema_d42: GenericSchema
@@ -42,39 +42,61 @@ class SchemaData:
 
 
 def collect_schema_data(value: Dict[str, Any]) -> List[SchemaData]:
-    schema_data: List[SchemaData] = []
-    normalized_schema: Dict[str, Any] = openapi_normalizer(value)
+    normalized_schema = openapi_normalizer(value)
+    paths_data = normalized_schema.get("paths", {})
 
-    if "paths" in normalized_schema:
-        for path, path_data in normalized_schema["paths"].items():
-            for http_method, method_data in path_data.items():
-                if http_method.lower() not in ["get", "post", "put", "patch", "delete"]:
-                    continue
+    return [
+        schema_data
+        for path, path_data in paths_data.items()
+        for schema_data in process_paths(path, path_data)
+    ]
 
-                request_schema, response_schema = get_request_response_schemas(method_data)
 
-                args = get_path_arguments(path)
-                if request_schema:
-                    args.append("body")
+def process_paths(path: str, path_data: Dict[str, Any]) -> List[SchemaData]:
+    paths = get_enum_paths(path, path_data)
+    if not paths:
+        paths = [path]
 
-                tags = method_data.get("tags", [])
-                schema_data.append(SchemaData(
-                    http_method=http_method,
-                    path=path,
-                    converted_path=convert_to_snake_case(path),
-                    args=args,
-                    queries=[],  # TODO: need to collect all query params
-                    interface_method=get_interface_method_name(http_method, path),
-                    status=get_success_status(method_data),
-                    schema_prefix=get_schema_prefix(http_method, path),
-                    response_schema=response_schema,
-                    response_schema_d42=from_json_schema(response_schema),
-                    request_schema=request_schema,
-                    request_schema_d42=from_json_schema(request_schema),
-                    tags=tags
-                ))
+    return [
+        process_method_data(enum_path, http_method, method_data)
+        for enum_path in paths
+        for http_method, method_data in path_data.items()
+        if http_method.lower() in ["get", "post", "put", "patch", "delete"]
+    ]
 
-    return schema_data
+
+def get_enum_paths(path: str, path_data: Dict[str, Any]) -> List[str]:
+    paths = []
+    parameters = path_data.get("parameters", [])
+    for parameter in parameters:
+        if parameter["in"] == "path" and "enum" in parameter["schema"]:
+            for enum_item in parameter["schema"]["enum"]:
+                paths.append(path.replace(f"{{{parameter['name']}}}", enum_item))
+    return paths
+
+
+def process_method_data(path: str, http_method: str, method_data: Dict[str, Any]) -> SchemaData:
+    request_schema, response_schema = get_request_response_schemas(method_data)
+
+    args = get_path_arguments(path)
+    if request_schema:
+        args.append("body")
+
+    return SchemaData(
+        http_method=http_method,
+        path=path,
+        converted_path=convert_to_snake_case(path),
+        args=args,
+        queries=get_queries(method_data),
+        interface_method=get_interface_method_name(http_method, path),
+        status=get_success_status(method_data),
+        schema_prefix=get_schema_prefix(http_method, path),
+        response_schema=response_schema,
+        response_schema_d42=from_json_schema(response_schema),
+        request_schema=request_schema,
+        request_schema_d42=from_json_schema(request_schema),
+        tags=method_data.get("tags", [])
+    )
 
 
 def get_request_response_schemas(
@@ -109,7 +131,7 @@ def get_request_schema_from_parameters(parameters: List[Dict[str, Any]]) -> Dict
 
 def get_response_schema(responses: Dict[str, Any]) -> Dict[str, Any]:
     for status, status_data in responses.items():
-        if status == "200" or status == 200:  # type: ignore
+        if str(status) == "200":
             content = status_data.get("content", {})
             content_schema: Dict[str, Any] = content.get(next(iter(content)), {}).get("schema", {})
             return content_schema
@@ -118,6 +140,15 @@ def get_response_schema(responses: Dict[str, Any]) -> Dict[str, Any]:
 
 def get_path_arguments(path: str) -> List[str]:
     return [convert_to_snake_case(arg) for arg in re.findall(r"{([^}]+)}", path)]
+
+
+def get_queries(method_data: Dict[str, Any]) -> List[str]:
+    queries = []
+    for source in [method_data.get("parameters", [])]:
+        for parameter in source:
+            if parameter["in"] == "query" and parameter["name"] not in queries:
+                queries.append(parameter["name"])
+    return queries
 
 
 def get_interface_method_name(http_method: str, path: str) -> str:
