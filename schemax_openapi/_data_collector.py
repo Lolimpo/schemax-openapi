@@ -19,7 +19,9 @@ class SchemaData:
         args: Arguments of the request.
         queries: Query parameters of the request. Currently unsupported and always '[]'.
         interface_method: Interface name for usage in schemax generation.
+        interface_method_humanized: Interface 'humanized' name for usage in schemax generation.
         schema_prefix: Schema prefix name for usage in schemax generation.
+        schema_prefix_humanized: Schema prefix 'humanized' name for user in schemax generation.
         response_schema: Normalized response schema (without $ref).
         response_schema_d42: Converted to d42 response_schema.
         request_schema: Normalized request schema (without $ref).
@@ -32,13 +34,24 @@ class SchemaData:
     args: List[str]
     queries: List[str]
     interface_method: str
+    interface_method_humanized: str
     status: Union[str, int]
     schema_prefix: str
+    schema_prefix_humanized: str
     response_schema: Dict[str, Any]
     response_schema_d42: GenericSchema
     request_schema: Dict[str, Any]
     request_schema_d42: GenericSchema
     tags: List[str]
+
+
+humanizator = {
+    "get": "Get",
+    "post": "Create",
+    "put": "Update",
+    "patch": "Change",
+    "delete": "Delete"
+}
 
 
 def collect_schema_data(value: Dict[str, Any]) -> List[SchemaData]:
@@ -89,8 +102,10 @@ def process_method_data(path: str, http_method: str, method_data: Dict[str, Any]
         args=args,
         queries=get_queries(method_data),
         interface_method=get_interface_method_name(http_method, path),
+        interface_method_humanized=get_interface_method_name(http_method, path, humanized=True),
         status=get_success_status(method_data),
         schema_prefix=get_schema_prefix(http_method, path),
+        schema_prefix_humanized=get_schema_prefix(http_method, path, humanized=True),
         response_schema=response_schema,
         response_schema_d42=from_json_schema(response_schema),
         request_schema=request_schema,
@@ -151,9 +166,9 @@ def get_queries(method_data: Dict[str, Any]) -> List[str]:
     return queries
 
 
-def get_interface_method_name(http_method: str, path: str) -> str:
+def get_interface_method_name(http_method: str, path: str, humanized: bool = False) -> str:
     return (
-        http_method.lower() +
+        (humanizator[http_method] if humanized else http_method.lower()) +
         "_".join(
             convert_to_snake_case(word)
             .replace("{", "")
@@ -174,14 +189,16 @@ def get_success_status(method_data: Dict[str, Any]) -> Union[str, int]:
     return ""
 
 
-def get_schema_prefix(http_method: str, path: str) -> str:
+def get_schema_prefix(http_method: str, path: str, humanized: bool = False) -> str:
     return (
-        http_method.capitalize() +
+        (humanizator[http_method] if humanized else http_method.capitalize()) +
         "".join(
             word
             .replace("{", "")
             .replace("}", "")
             .replace("-", "")
+            .replace("_", "")
+            .replace(".", "")
             .capitalize()
             for word in path.split("/")
         )

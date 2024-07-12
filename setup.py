@@ -13,7 +13,7 @@ def find_dev_required():
 
 setup(
     name="schemax-openapi",
-    version="0.0.3",
+    version="0.0.4",
     description="Useful OpenAPI parser for d42 universe",
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
