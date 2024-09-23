@@ -148,8 +148,14 @@ def get_response_schema(responses: Dict[str, Any]) -> Dict[str, Any]:
     for status, status_data in responses.items():
         if str(status) == "200":
             content = status_data.get("content", {})
-            content_schema: Dict[str, Any] = content.get(next(iter(content)), {}).get("schema", {})
-            return content_schema
+            if content:
+                content_schema: Dict[str, Any] = (
+                    content.get(next(iter(content)), {}).get("schema", {})
+                )
+                return content_schema
+            schema: Dict[str, Any] = status_data.get("schema", {})
+            if schema:
+                return schema
     return {}
 
 
