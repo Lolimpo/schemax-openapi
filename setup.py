@@ -13,7 +13,7 @@ def find_dev_required():
 
 setup(
     name="schemax-openapi",
-    version="0.0.5",
+    version="0.1.0",
     description="Useful OpenAPI parser for d42 universe",
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
@@ -30,6 +30,7 @@ setup(
         "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
         "Programming Language :: Python :: 3.12",
+        "Programming Language :: Python :: 3.13",
         "Typing :: Typed",
     ],
 )

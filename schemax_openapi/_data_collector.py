@@ -2,7 +2,7 @@ import re
 from dataclasses import dataclass
 from typing import Any, Dict, List, Tuple, Union
 
-from district42 import GenericSchema
+from d42.declaration.types import GenericSchema
 from schemax import from_json_schema
 
 from ._openapi_normalizer import openapi_normalizer
