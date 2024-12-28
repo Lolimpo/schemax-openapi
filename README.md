@@ -1,5 +1,8 @@
 # OpenAPI Parser
 
+> [!CAUTION]
+> No longer maintained. All functional were merged into original [schemax](https://github.com/Lolimpo/schemax) project
+
 Useful for d42 universe and schemax lib.
 
 
